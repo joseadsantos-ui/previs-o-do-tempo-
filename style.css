@@ -1,0 +1,249 @@
+/* Consulta do Clima — o fundo e o card mudam conforme o tempo e o horário */
+
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+
+body {
+  --g1: #1e63b5;
+  --g2: #5ab9f0;
+  margin: 0;
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+  background: linear-gradient(170deg, var(--g1), var(--g2)) fixed;
+  color: #1c2b36;
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Cores por condição (dia) */
+body[data-tempo="limpo"]    { --g1: #1e63b5; --g2: #4da3e0; }
+body[data-tempo="parcial"]  { --g1: #2f6fae; --g2: #6fa6d6; }
+body[data-tempo="nublado"]  { --g1: #4d6073; --g2: #8d9db0; }
+body[data-tempo="chuva"]    { --g1: #34495e; --g2: #6c849c; }
+body[data-tempo="neve"]     { --g1: #5a7389; --g2: #8aa3ba; }
+body[data-tempo="nevoeiro"] { --g1: #66727f; --g2: #95a1ad; }
+body[data-tempo="trovoada"] { --g1: #272b40; --g2: #565b7d; }
+/* À noite, tudo escurece */
+body[data-dia="noite"]      { --g1: #0b1d3a; --g2: #2a3f6b; }
+
+.container { width: 100%; max-width: 460px; margin: 0 auto; }
+
+h1 {
+  margin: 8px 0 20px;
+  font-size: 1.9rem;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+}
+
+/* Cartão de busca */
+.busca {
+  padding: 18px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+label { display: block; margin-bottom: 6px; font-weight: 700; }
+#cidade {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #74879a;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+#buscar {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: #12435f;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+#buscar:hover { background: #1a5d85; }
+#buscar:disabled { background: #5b6f80; cursor: progress; }
+
+#cidade:focus-visible, #buscar:focus-visible, .botao-historico:focus-visible {
+  outline: 3px solid #ffb703;
+  outline-offset: 2px;
+}
+
+/* Resultado */
+#resultado { display: block; margin-top: 18px; }
+#resultado > p:not(.mensagem-erro) {
+  padding: 14px;
+  background: rgba(255, 255, 255, .95);
+  border-radius: 12px;
+  text-align: center;
+}
+.mensagem-erro {
+  margin: 0;
+  padding: 14px;
+  background: #fdeaea;
+  border-left: 5px solid #b42318;
+  border-radius: 12px;
+  color: #7a1212;
+}
+
+.card-clima {
+  overflow: hidden;
+  overflow-wrap: break-word;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  animation: entrar .4s ease both;
+}
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-clima { animation: none; }
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 18px 20px;
+  background: linear-gradient(160deg, var(--g1) 30%, var(--g2));
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+}
+.ilustracao svg { display: block; width: 130px; height: auto; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .25)); }
+.temp-bloco { text-align: right; }
+.temperatura { margin: 0; font-size: 3.2rem; font-weight: 700; line-height: 1; }
+.condicao { margin: 6px 0 0; font-size: 1.02rem; }
+
+.corpo { padding: 16px 20px 18px; }
+.corpo h2 { margin: 0; font-size: 1.4rem; color: #12435f; }
+.local { margin: 0 0 14px; color: #4a5a68; font-size: .88rem; }
+
+.grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dado { padding: 10px 6px; background: #f0f5f9; border-radius: 10px; text-align: center; }
+.dado .rotulo { display: block; color: #4a5a68; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; }
+.dado .valor { display: block; margin-top: 2px; font-size: 1.05rem; font-weight: 700; color: #12435f; }
+.atualizado { margin: 14px 0 0; color: #4a5a68; font-size: .8rem; text-align: center; }
+
+/* Desenhos (SVG) */
+.nuvem { fill: #fff; }
+.nuvem.cinza { fill: #cfd8e2; }
+.nuvem.escura { fill: #8a97a6; }
+.sol circle { fill: #ffc933; }
+.sol path { fill: none; stroke: #ffc933; stroke-width: 3; stroke-linecap: round; }
+.lua { fill: #f4e9b8; }
+.traco-chuva { fill: none; stroke: #5ab0ff; stroke-width: 3; stroke-linecap: round; }
+.traco-nevoa { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: .85; }
+.floco { fill: #fff; }
+.raio { fill: #ffd23f; }
+
+/* Histórico */
+#historico { margin-top: 22px; }
+.titulo-historico { margin: 0 0 8px; font-size: .9rem; color: rgba(255, 255, 255, .92); }
+.lista-historico { display: flex; flex-wrap: wrap; gap: 8px; }
+.botao-historico {
+  min-height: 40px;
+  padding: 6px 16px;
+  border: 1px solid rgba(255, 255, 255, .6);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .18);
+  color: #fff;
+  font-size: .9rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.botao-historico:hover { background: rgba(255, 255, 255, .32); }
+
+@media (max-width: 400px) {
+  body { padding: 12px 10px 32px; }
+  .ilustracao svg { width: 100px; }
+  .temperatura { font-size: 2.6rem; }
+}
+@media (min-width: 600px) {
+  body { padding-top: 48px; }
+}
+
+/* ===== Cenário animado: sol, nuvens, chuva, neve e gelo ===== */
+.cenario { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.container { position: relative; z-index: 1; }
+
+/* Sol com brilho e raios girando devagar */
+.sol-bg {
+  position: absolute; top: -70px; right: -60px; width: 220px; height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff7b8 0 30%, #ffd43b 50%, rgba(255, 212, 59, 0) 70%);
+  animation: brilho 6s ease-in-out infinite;
+}
+.sol-bg::before {
+  content: ""; position: absolute; inset: -35%; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 234, 130, .4) 0 7deg, transparent 7deg 24deg);
+  -webkit-mask: radial-gradient(circle, transparent 28%, #000 32%, transparent 68%);
+  mask: radial-gradient(circle, transparent 28%, #000 32%, transparent 68%);
+  animation: girar 50s linear infinite;
+}
+body[data-dia="noite"] .sol-bg { display: none; }
+@keyframes brilho { 50% { transform: scale(1.08); opacity: .9; } }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Nuvens atravessando a tela */
+.nuvem-bg { position: absolute; left: 0; fill: #fff; opacity: .8; animation: deriva linear infinite; }
+.n1 { top: 6%;  width: 190px; animation-duration: 70s; animation-delay: -10s; }
+.n2 { top: 24%; width: 120px; animation-duration: 50s; animation-delay: -35s; opacity: .6; }
+.n3 { top: 46%; width: 230px; animation-duration: 95s; animation-delay: -60s; opacity: .5; }
+.n4 { top: 70%; width: 150px; animation-duration: 80s; animation-delay: -25s; opacity: .45; }
+@keyframes deriva { from { transform: translateX(-260px); } to { transform: translateX(110vw); } }
+
+/* Pingentes de gelo pendurados no topo */
+.pingentes {
+  position: absolute; top: 0; left: 0; right: 0; height: 30px;
+  background: conic-gradient(from 150deg at 50% 0, rgba(225, 243, 255, .9) 0 60deg, transparent 0 360deg) repeat-x;
+  background-size: 30px 30px;
+  filter: drop-shadow(0 2px 3px rgba(0, 40, 80, .25));
+}
+
+/* Chuva */
+.gota {
+  position: absolute; top: -30px; left: var(--x); width: 2px; height: 18px;
+  border-radius: 2px; background: linear-gradient(transparent, #bfe3ff);
+  animation: cair var(--d) linear infinite var(--a);
+}
+@keyframes cair {
+  from { transform: translate(0, -30px) rotate(12deg); }
+  to   { transform: translate(-30px, 110vh) rotate(12deg); }
+}
+
+/* Neve */
+.neve-bg {
+  position: absolute; top: -30px; left: var(--x); font-size: var(--s); color: #fff;
+  text-shadow: 0 0 4px rgba(120, 170, 220, .7); opacity: .9;
+  animation: nevar var(--d) linear infinite var(--a);
+}
+@keyframes nevar {
+  from { transform: translate(0, -30px) rotate(0); }
+  50%  { transform: translate(25px, 55vh) rotate(180deg); }
+  to   { transform: translate(-10px, 110vh) rotate(360deg); }
+}
+
+/* Pedras de gelo */
+.gelo {
+  position: absolute; top: -30px; left: var(--x); width: 13px; height: 13px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .95), rgba(150, 210, 255, .55));
+  border: 1px solid rgba(255, 255, 255, .85); border-radius: 2px;
+  animation: granizo var(--d) linear infinite var(--a);
+}
+@keyframes granizo {
+  from { transform: translateY(-30px) rotate(45deg); }
+  to   { transform: translateY(110vh) rotate(405deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cenario * { animation: none !important; }
+  .gota, .neve-bg, .gelo { display: none; }
+}
